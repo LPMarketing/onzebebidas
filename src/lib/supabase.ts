@@ -13,32 +13,38 @@ if (!supabaseUrl || !supabasePublishableKey) {
 const normalizedBaseUrl = supabaseUrl.replace(/\/+$/, '');
 
 const resilientSupabaseFetch: typeof fetch = async (input, init) => {
-  if (typeof window === 'undefined') {
-    return fetch(input, init);
-  }
-
-  const rawUrl =
-    typeof input === 'string'
-      ? input
-      : input instanceof URL
-        ? input.toString()
-        : input.url;
-
-  if (rawUrl.startsWith(normalizedBaseUrl)) {
-    const suffix = rawUrl.slice(normalizedBaseUrl.length);
-    const proxyUrl = `${window.location.origin}/api/supabase${suffix}`;
-
-    try {
-      const proxyInput =
-        input instanceof Request ? new Request(proxyUrl, input) : proxyUrl;
-      return await fetch(proxyInput, init);
-    } catch {
-      // Fallback to direct Supabase fetch if local proxy is temporarily unreachable
-      return fetch(input, init);
+  try {
+    return await fetch(input, init);
+  } catch (directError) {
+    if (typeof window === 'undefined') {
+      throw directError;
     }
-  }
 
-  return fetch(input, init);
+    const rawUrl =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+
+    if (rawUrl.startsWith(normalizedBaseUrl)) {
+      const suffix = rawUrl.slice(normalizedBaseUrl.length);
+      const proxyUrl = `${window.location.origin}/api/supabase${suffix}`;
+
+      try {
+        const proxyInput =
+          input instanceof Request ? new Request(proxyUrl, input) : proxyUrl;
+        const proxyRes = await fetch(proxyInput, init);
+        if (proxyRes.headers.get('x-supabase-proxy') === '1') {
+          return proxyRes;
+        }
+      } catch {
+        // Proxy not available on static hosts (e.g. Vercel)
+      }
+    }
+
+    throw directError;
+  }
 };
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {

@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import http from 'http';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -82,6 +83,7 @@ app.use('/api/supabase', async (req: Request, res: Response) => {
     });
 
     res.status(upstreamRes.status);
+    res.setHeader('x-supabase-proxy', '1');
     upstreamRes.headers.forEach((value, key) => {
       if (!STRIP_PROXY_RES_HEADERS.has(key.toLowerCase())) {
         res.setHeader(key, value);
@@ -769,10 +771,17 @@ app.post('/api/consultar-bebidas', async (req: Request, res: Response): Promise<
 // ==========================================
 async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
+  const httpServer = http.createServer(app);
 
   if (!isProduction) {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+        hmr: {
+          server: httpServer,
+        },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -786,7 +795,7 @@ async function startServer() {
     }
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`[Onze Lounge Server] running on http://0.0.0.0:${PORT}`);
   });
 }
