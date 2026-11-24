@@ -1,0 +1,20 @@
+{
+  "entities": {
+    "User": {
+      "collection": "users",
+      "fields": {
+        "uid": { "type": "string", "description": "Unique authentication identifier from Firebase Auth" },
+        "fullName": { "type": "string", "description": "Full name of the customer" },
+        "email": { "type": "string", "description": "Email address" },
+        "phone": { "type": "string", "description": "Formatted Brazilian phone number e.g. (62) 98222-5111" },
+        "phoneNormalized": { "type": "string", "description": "Normalized phone number with digits only e.g. 62982225111" },
+        "cpf": { "type": "string", "description": "Formatted Brazilian CPF e.g. 707.636.621-51" },
+        "cpfNormalized": { "type": "string", "description": "Normalized CPF with digits only e.g. 70763662151" },
+        "role": { "type": "string", "description": "User role: client or admin" },
+        "active": { "type": "boolean", "description": "Whether customer account is active" },
+        "createdAt": { "type": "timestamp", "description": "Record creation timestamp" },
+        "updatedAt": { "type": "timestamp", "description": "Record update timestamp" }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Onze Lounge",
+  "description": "Sistema de cadastro e gerenciamento de clientes para Onze Lounge",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

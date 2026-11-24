@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        request.auth.token.email == 'lpmktcontato@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData(request.auth.uid).role == 'admin')
+      );
+    }
+
+    match /users/{userId} {
+      // Allow individual get for owner or admin
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Allow listing users for admin or authenticated users for searching (or admin)
+      allow list: if isAdmin();
+
+      // Allow creating own profile on registration with role = 'client'
+      allow create: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        (request.resource.data.role == 'client' || isAdmin());
+
+      // Allow updating own profile (cannot change role or uid) or admin updating everything
+      allow update: if (
+        isOwner(userId) && 
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.role == resource.data.role
+      ) || isAdmin();
+
+      // Only admin can delete user docs
+      allow delete: if isAdmin();
+    }
+  }
+}
